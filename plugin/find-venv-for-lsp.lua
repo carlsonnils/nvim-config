@@ -13,6 +13,36 @@ local function find_venv(start_path)
     end
     return nil
 end
+-- Function to add python path and venv path to pyright conifg
+local function config_pyright_path(venv_path)
+    local did_configure = false
+
+    local py_pth = ''
+    if vim.fn.has('win32') == 1 then
+        py_pth = venv_path .. '/Scripts/python.exe'
+    else
+        py_pth = venv_path .. '/bin/python'
+    end
+
+    if vim.fn.executable(py_pth) == 1 then
+        local clients = vim.lsp.get_clients({bufnr = bufnr, name = 'pyright'})
+        if #clients > 0 then
+            for _, client in ipairs(clients) do
+                client.config.settings.python = client.config.settings.python or {}
+                client.config.settings.python.pythonPath = py_pth
+                client.config.settings.python.analysis = client.config.settings.python.analysis or {}
+                client.config.settings.python.analysis.include = venv_path
+                client:notify('workspace/didChangeConfiguration', {
+                    settings = client.config.settings
+                })
+
+                did_configure = true
+            end
+        end
+    end
+
+    return did_configure
+end
 -- Async function to configure Pyright with found venv
 local function setup_pyright_with_venv(bufnr)
     local current_file = vim.api.nvim_buf_get_name(bufnr)
@@ -23,42 +53,9 @@ local function setup_pyright_with_venv(bufnr)
     -- Run in async context
     vim.schedule(function()
         local venv_path = find_venv(start_dir)
+
         if venv_path then
-            local python_path = venv_path .. '/bin/python'
-            local python_path_win = venv_path .. '/Scripts/python.exe'
-            -- Check if python exists in venv
-            if vim.fn.executable(python_path) == 1 or vim.fn.executable(python_path_win) == 1 then
-                -- Get or create LSP client for this buffer
-                local clients = vim.lsp.get_clients({bufnr = bufnr, name = 'pyright'})
-                if #clients > 0 then
-                    -- Update existing client settings
-                    for _, client in ipairs(clients) do
-                        client.config.settings.python = client.config.settings.python or {}
-                        client.config.settings.python.pythonPath = python_path
-                        client.notify('workspace/didChangeConfiguration', {
-                            settings = client.config.settings
-                        })
-                    end
-                    print('Pyright: Using venv at ' .. venv_path)
-                -- else
-                --     -- Start new client with venv
-                --     vim.lsp.start({
-                --         name = 'pyright',
-                --         cmd = {'pyright-langserver', '--stdio'},
-                --         root_dir = vim.fs.dirname(vim.fs.find({'pyproject.toml', 'setup.py', '.git'}, {upward = true})[1]),
-                --         settings = {
-                --             python = {
-                --                 pythonPath = python_path
-                --             }
-                --         }
-                --     })
-                --     print('Pyright: Started with venv at ' .. venv_path)
-                end
-            else
-                print('Pyright: Found .venv but no python binary at ' .. python_path)
-            end
-        else
-            print('Pyright: No .venv found in current or parent directories')
+            config_pyright_path(venv_path)
         end
     end)
 end
