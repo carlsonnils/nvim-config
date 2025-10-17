@@ -25,8 +25,9 @@ local function setup_pyright_with_venv(bufnr)
         local venv_path = find_venv(start_dir)
         if venv_path then
             local python_path = venv_path .. '/bin/python'
+            local python_path_win = venv_path .. '/Scripts/python.exe'
             -- Check if python exists in venv
-            if vim.fn.executable(python_path) == 1 then
+            if vim.fn.executable(python_path) == 1 or vim.fn.executable(python_path_win) == 1 then
                 -- Get or create LSP client for this buffer
                 local clients = vim.lsp.get_clients({bufnr = bufnr, name = 'pyright'})
                 if #clients > 0 then
