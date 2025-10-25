@@ -15,15 +15,17 @@ vim.o.relativenumber = true
 vim.o.signcolumn = "yes:1"
 vim.o.undofile = true
 vim.opt.clipboard:append("unnamedplus")
+vim.g.mapleader = " "
+vim.g.localmapleader = " "
 
 
 -- set color scheme
 vim.pack.add({'https://github.com/rebelot/kanagawa.nvim.git'})
-vim.cmd.colorscheme("kanagawa")
-vim.api.nvim_set_hl(0, 'Normal', { bg = 'NONE' })
-local normal_bg = vim.api.nvim_get_hl(0, {name = 'Normal'}).bg
-local linenr_fg = vim.api.nvim_get_hl(0, {name = 'LineNr'}).fg
-vim.api.nvim_set_hl(0, 'LineNr', { bg = normal_bg, fg = linenr_fg })
+vim.cmd.colorscheme("kanagawa-lotus")
+-- vim.api.nvim_set_hl(0, 'Normal', { bg = 'NONE' })
+-- local normal_bg = vim.api.nvim_get_hl(0, {name = 'Normal'}).bg
+-- local linenr_fg = vim.api.nvim_get_hl(0, {name = 'LineNr'}).fg
+-- vim.api.nvim_set_hl(0, 'LineNr', { bg = normal_bg, fg = linenr_fg })
 
 
 -- global floating window borders
@@ -77,17 +79,39 @@ vim.lsp.enable('pyright')
 vim.lsp.enable('lua_ls')
 -- gopls language server
 vim.lsp.enable('gopls')
+-- ruff for python
+vim.lsp.config('ruff', {
+    cmd = { 'ruff', 'server' },
+    filetypes = { 'python' },
+    root_markers = { 'pyproject.toml', 'ruff.toml', '.ruff.toml', '.git', 'main.py', '.venv' },
+    settings = {
+        indent_width = 4,
+        line_length = 90,
+        format = {
+            docstring_code_format = true,
+            indent_style = "space",
+            quote_style = "double",
+        },
+    },
+})
+vim.lsp.enable('ruff')
+-- superhtml
+vim.lsp.enable('superhtml')
 
 
 -- lsp keymaps
-local on_attach = function(client, bufnr)
+local lsp_keymap_on_attach = function(client, bufnr)
   local bufopts = { noremap=true, silent=true, buffer=bufnr }
-  vim.keymap.set('n', '<leader>d', vim.lsp.buf.definition, bufopts)
+  vim.keymap.set('n', '<Leader>d', vim.lsp.buf.definition, bufopts)
   vim.keymap.set('n', 'K', vim.lsp.buf.hover, bufopts)
-  vim.keymap.set('n', '<leader>i', vim.lsp.buf.implementation, bufopts)
-  vim.keymap.set('n', '<leader>rn', vim.lsp.buf.rename, bufopts)
-  vim.keymap.set('n', '<leader>ca', vim.lsp.buf.code_action, bufopts)
-  vim.keymap.set('n', '<leader>r', vim.lsp.buf.references, bufopts)
-  vim.keymap.set('n', '<leader>f', function() vim.lsp.buf.format { async = true } end, bufopts)
+  vim.keymap.set('n', '<Leader>i', vim.lsp.buf.implementation, bufopts)
+  vim.keymap.set('n', '<Leader>rn', vim.lsp.buf.rename, bufopts)
+  vim.keymap.set('n', '<Leader>ca', vim.lsp.buf.code_action, bufopts)
+  vim.keymap.set('n', '<Leader>r', vim.lsp.buf.references, bufopts)
+  vim.keymap.set('n', '<Leader>f', function() vim.lsp.buf.format { async = true } end, bufopts)
 end
+vim.api.nvim_create_autocmd("LspAttach", {
+  pattern = { "*.py", "*.go", ".lua", ".html", ".css", ".c", ".js" },
+  callback = lsp_keymap_on_attach,
+})
 
