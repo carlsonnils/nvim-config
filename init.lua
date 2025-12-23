@@ -39,8 +39,8 @@ end
 
 -- treesitter
 vim.pack.add({'https://github.com/nvim-treesitter/nvim-treesitter.git'})
-require('nvim-treesitter.configs').setup({
-    ensure_installed = { "c", "lua", "vim", "vimdoc", "javascript", "markdown", "python", "html", "css", "go", "csv" },
+require('nvim-treesitter').setup({
+    ensure_installed = { "c", "cpp", "lua", "vim", "vimdoc", "javascript", "markdown", "python", "html", "css", "go", "csv" },
     sync_install = false,
     auto_install = true,
     highlight = {
