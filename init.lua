@@ -1,4 +1,6 @@
--- options
+-- OPTIONS
+--
+--
 vim.o.expandtab = true
 vim.o.shiftwidth = 4
 vim.o.softtabstop = 4
@@ -16,7 +18,10 @@ vim.g.mapleader = " "
 vim.g.localmapleader = " "
 
 
--- set color scheme
+
+-- COLOR SCHEME
+--
+--
 vim.pack.add({'https://github.com/rebelot/kanagawa.nvim.git'})
 vim.cmd.colorscheme("kanagawa-lotus")
 -- vim.api.nvim_set_hl(0, 'Normal', { bg = 'NONE' })
@@ -74,18 +79,17 @@ function vim.lsp.util.open_floating_preview(contents, syntax, opts, ...)
 end
 
 
--- treesitter
-vim.pack.add({'https://github.com/nvim-treesitter/nvim-treesitter.git'})
-require('nvim-treesitter').setup(require('nvim-treesitter-setup'))
 
-
--- mason: manage lsp server
+-- LSP
+--
+--
+-- mason: manage lsp servers
 vim.pack.add({'https://github.com/mason-org/mason.nvim.git'})
 require('mason').setup()
 
-
 -- lspconfig
 vim.pack.add({'https://github.com/neovim/nvim-lspconfig'})
+
 -- pyright
 vim.lsp.config('pyright', require('lsp.pyright'))
 vim.lsp.enable('pyright')
@@ -93,13 +97,17 @@ require('pyright-setup')
 
 -- lua language server
 vim.lsp.enable('lua_ls')
+
 -- gopls language server
 vim.lsp.enable('gopls')
+
 -- ruff for python
 -- vim.lsp.config('ruff', require('lsp.ruff'))
 -- vim.lsp.enable('ruff')
+
 -- superhtml
 vim.lsp.enable('superhtml')
+
 -- clangd
 vim.lsp.config('clangd', require('lsp.clangd'))
 vim.lsp.enable('clangd')
