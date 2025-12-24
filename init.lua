@@ -49,6 +49,8 @@ vim.pack.add({'https://github.com/neovim/nvim-lspconfig'})
 -- pyright
 vim.lsp.config('pyright', require('lsp.pyright'))
 vim.lsp.enable('pyright')
+require('pyright-setup')
+
 -- lua language server
 vim.lsp.enable('lua_ls')
 -- gopls language server
