@@ -45,7 +45,7 @@ require('mason').setup()
 
 
 -- lspconfig
--- vim.pack.add({'https://github.com/neovim/nvim-lspconfig'})
+vim.pack.add({'https://github.com/neovim/nvim-lspconfig'})
 -- pyright
 vim.lsp.config('pyright', require('lsp.pyright'))
 vim.lsp.enable('pyright')
@@ -54,8 +54,8 @@ vim.lsp.enable('lua_ls')
 -- gopls language server
 vim.lsp.enable('gopls')
 -- ruff for python
-vim.lsp.config('ruff', require('lsp.ruff'))
-vim.lsp.enable('ruff')
+-- vim.lsp.config('ruff', require('lsp.ruff'))
+-- vim.lsp.enable('ruff')
 -- superhtml
 vim.lsp.enable('superhtml')
 -- clangd
