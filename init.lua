@@ -36,22 +36,7 @@ end
 
 -- treesitter
 vim.pack.add({'https://github.com/nvim-treesitter/nvim-treesitter.git'})
-require('nvim-treesitter').setup({
-    ensure_installed = { "c", "cpp", "lua", "vim", "vimdoc", "javascript", "markdown", "python", "html", "css", "go", "csv" },
-    sync_install = false,
-    auto_install = true,
-    highlight = {
-        enable = true,
-        disable = function(lang, buf)
-            local max_filesize = 100 * 1024 -- 100 KB
-            local ok, stats = pcall(vim.loop.fs_stat, vim.api.nvim_buf_get_name(buf))
-            if ok and stats and stats.size > max_filesize then
-                return true
-            end
-        end,
-        additional_vim_regex_highlighting = false,
-    },
-})
+require('nvim-treesitter').setup(require('nvim-treesitter-setup'))
 
 
 -- mason: manage lsp server
@@ -60,40 +45,22 @@ require('mason').setup()
 
 
 -- lspconfig
-vim.pack.add({'https://github.com/neovim/nvim-lspconfig'})
+-- vim.pack.add({'https://github.com/neovim/nvim-lspconfig'})
 -- pyright
-vim.lsp.config('pyright', {
-    settings = {
-        python = {
-            analysis = {
-                diagnosticMode = 'workspace',
-            },
-        },
-    }
-})
+vim.lsp.config('pyright', require('lsp.pyright'))
 vim.lsp.enable('pyright')
 -- lua language server
 vim.lsp.enable('lua_ls')
 -- gopls language server
 vim.lsp.enable('gopls')
 -- ruff for python
-vim.lsp.config('ruff', {
-    cmd = { 'ruff', 'server' },
-    filetypes = { 'python' },
-    root_markers = { 'pyproject.toml', 'ruff.toml', '.ruff.toml', '.git', 'main.py', '.venv' },
-    settings = {
-        indent_width = 4,
-        line_length = 90,
-        format = {
-            docstring_code_format = true,
-            indent_style = "space",
-            quote_style = "double",
-        },
-    },
-})
+vim.lsp.config('ruff', require('lsp.ruff'))
 vim.lsp.enable('ruff')
 -- superhtml
 vim.lsp.enable('superhtml')
+-- clangd
+vim.lsp.config('clangd', require('lsp.clangd'))
+vim.lsp.enable('clangd')
 
 
 -- lsp keymaps
