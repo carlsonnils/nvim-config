@@ -25,7 +25,47 @@ vim.cmd.colorscheme("kanagawa-lotus")
 -- vim.api.nvim_set_hl(0, 'LineNr', { bg = normal_bg, fg = linenr_fg })
 
 
--- global floating window borders
+
+-- TREESITTER
+--
+--
+vim.pack.add({'https://github.com/nvim-treesitter/nvim-treesitter.git'})
+require('nvim-treesitter').setup(require('nvim-treesitter-setup'))
+
+
+
+-- TELESCOPE
+--
+--
+vim.pack.add({
+    { src = 'https://github.com/nvim-lua/plenary.nvim.git' },
+    { src = 'https://github.com/sharkdp/fd.git' },
+    { src = 'https://github.com/nvim-telescope/telescope.nvim.git' },
+})
+local actions = require('telescope.actions')
+require('telescope').setup({
+  defaults = {
+    mappings = {
+      n = {  -- normal mode mappings
+        ["<C-b>"] = "delete_buffer",
+      },
+      i = {  -- insert mode mappings
+        -- ["<C-b>"] = "delete_buffer",
+      },
+    },
+  },
+})
+local builtin = require('telescope.builtin')
+vim.keymap.set('n', '<leader>ff', builtin.find_files, { desc = 'Telescope find files' })
+vim.keymap.set('n', '<leader>fg', builtin.live_grep, { desc = 'Telescope live grep' })
+vim.keymap.set('n', '<leader>fb', builtin.buffers, { desc = 'Telescope buffers' })
+vim.keymap.set('n', '<leader>fh', builtin.help_tags, { desc = 'Telescope help tags' })
+
+
+
+-- GLOBAL FLOATING WINDOW BORDERS
+--
+--
 local orig_util_open_floating_preview = vim.lsp.util.open_floating_preview
 function vim.lsp.util.open_floating_preview(contents, syntax, opts, ...)
     opts = opts or {}
