@@ -1,7 +1,4 @@
-
-
 -- options
-vim.opt.packpath:prepend("~/.config/nvim/site")
 vim.o.expandtab = true
 vim.o.shiftwidth = 4
 vim.o.softtabstop = 4
@@ -11,7 +8,7 @@ vim.o.number = true
 vim.o.relativenumber = true
 -- vim.o.wrap = false
 -- vim.o.sidescrolloff = 10
--- vim.o.scrolloff = 5
+vim.o.scrolloff = 3
 vim.o.signcolumn = "yes:1"
 vim.o.undofile = true
 vim.opt.clipboard:append("unnamedplus")
