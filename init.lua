@@ -64,6 +64,9 @@ vim.lsp.enable('superhtml')
 vim.lsp.config('clangd', require('lsp.clangd'))
 vim.lsp.enable('clangd')
 
+-- marksman
+vim.lsp.config('marksman', require('lsp.marksman'))
+vim.lsp.enable('marksman')
 
 -- lsp keymaps
 local lsp_keymap_on_attach = function(client, bufnr)
@@ -81,3 +84,15 @@ vim.api.nvim_create_autocmd("LspAttach", {
   callback = lsp_keymap_on_attach,
 })
 
+
+
+-- MARKDOWN RENDERING
+--
+--
+vim.pack.add({
+    -- { src = 'https://github.com/nvim-treesitter/nvim-treesitter' },    -- already added
+    { src = 'https://github.com/nvim-mini/mini.nvim' },            -- if you use the mini.nvim suite
+    { src = 'https://github.com/nvim-mini/mini.icons' },        -- if you use standalone mini plugins
+    { src = 'https://github.com/nvim-tree/nvim-web-devicons' }, -- if you prefer nvim-web-devicons
+    { src = 'https://github.com/MeanderingProgrammer/render-markdown.nvim' },
+})
