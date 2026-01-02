@@ -1,3 +1,13 @@
+-- OS NAME
+--
+--
+local uname = vim.loop.os_uname()
+local function is_windows() return uname.sysname == "Windows_NT" end
+local function is_linux() return uname.sysname == "Linux" end
+local function is_macos() return uname.sysname == "Darwin" end
+
+
+
 -- OPTIONS
 --
 --
@@ -16,6 +26,18 @@ vim.o.undofile = true
 vim.opt.clipboard:append("unnamedplus")
 vim.g.mapleader = " "
 vim.g.localmapleader = " "
+if is_windows() then
+    vim.opt.shell = "powershell"
+    vim.opt.shellcmdflag = "-NoLogo -Command"
+    vim.opt.shellquote = "\""
+    vim.opt.shellxquote = ""
+end
+if is_linux() then
+    vim.opt.shell = "bash"
+    vim.opt.shellcmdflag = ""
+    vim.opt.shellquote = ""
+    vim.opt.shellxquote = ""
+end
 
 
 
@@ -137,10 +159,10 @@ vim.api.nvim_create_autocmd("LspAttach", {
 -- MARKDOWN RENDERING
 --
 --
-vim.pack.add({
-    -- { src = 'https://github.com/nvim-treesitter/nvim-treesitter' },    -- already added
-    { src = 'https://github.com/nvim-mini/mini.nvim' },            -- if you use the mini.nvim suite
-    { src = 'https://github.com/nvim-mini/mini.icons' },        -- if you use standalone mini plugins
-    { src = 'https://github.com/nvim-tree/nvim-web-devicons' }, -- if you prefer nvim-web-devicons
-    { src = 'https://github.com/MeanderingProgrammer/render-markdown.nvim' },
-})
+-- vim.pack.add({
+--     -- { src = 'https://github.com/nvim-treesitter/nvim-treesitter' },    -- already added
+--     { src = 'https://github.com/nvim-mini/mini.nvim' },            -- if you use the mini.nvim suite
+--     { src = 'https://github.com/nvim-mini/mini.icons' },        -- if you use standalone mini plugins
+--     { src = 'https://github.com/nvim-tree/nvim-web-devicons' }, -- if you prefer nvim-web-devicons
+--     { src = 'https://github.com/MeanderingProgrammer/render-markdown.nvim' },
+-- })
