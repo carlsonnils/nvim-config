@@ -18,9 +18,9 @@ vim.o.tabstop = 4
 vim.o.autoindent = true
 vim.o.number = true
 vim.o.relativenumber = true
--- vim.o.wrap = false
--- vim.o.sidescrolloff = 10
-vim.o.scrolloff = 3
+vim.o.wrap = false
+vim.o.sidescrolloff = 2
+vim.o.scrolloff = 2
 vim.o.signcolumn = "yes:1"
 vim.o.undofile = true
 vim.opt.clipboard:append("unnamedplus")
@@ -38,6 +38,21 @@ if is_linux() then
     vim.opt.shellquote = ""
     vim.opt.shellxquote = ""
 end
+
+
+
+-- CUSTOM KEYMAPS
+--
+--
+vim.keymap.set('n', '<Leader>t', ':below sp term://powershell<CR>i', { desc = 'Open terminal' })
+vim.keymap.set('n', '<Leader>h', '<C-w>h', { desc = 'Move to right window' })
+vim.keymap.set('n', '<Leader>j', '<C-w>j', { desc = 'Move to below window' })
+vim.keymap.set('n', '<Leader>k', '<C-w>k', { desc = 'Move to above window' })
+vim.keymap.set('n', '<Leader>l', '<C-w>l', { desc = 'Move to left window' })
+vim.keymap.set('n', '<Leader>u', ':resize +2<CR>', { desc = 'Move to right window' })
+vim.keymap.set('n', '<Leader>p', ':resize -2<CR>', { desc = 'Move to right window' })
+vim.keymap.set('n', '<Leader>i', ':vertical resize +2<CR>', { desc = 'Move to right window' })
+vim.keymap.set('n', '<Leader>o', ':vertical resize -2<CR>', { desc = 'Move to right window' })
 
 
 
@@ -166,3 +181,61 @@ vim.api.nvim_create_autocmd("LspAttach", {
 --     { src = 'https://github.com/nvim-tree/nvim-web-devicons' }, -- if you prefer nvim-web-devicons
 --     { src = 'https://github.com/MeanderingProgrammer/render-markdown.nvim' },
 -- })
+
+
+
+-- Git Help
+-- 
+--
+vim.pack.add({
+    { src = 'https://github.com/lewis6991/gitsigns.nvim.git' }
+})
+require('gitsigns').setup {
+  signs = {
+    add          = { text = '+' },
+    change       = { text = '┃' },
+    delete       = { text = '_' },
+    topdelete    = { text = '‾' },
+    changedelete = { text = '~' },
+    untracked    = { text = '┆' },
+  },
+  signs_staged = {
+    add          = { text = '+' },
+    change       = { text = '┃' },
+    delete       = { text = '_' },
+    topdelete    = { text = '‾' },
+    changedelete = { text = '~' },
+    untracked    = { text = '┆' },
+  },
+  signs_staged_enable = true,
+  signcolumn = true,  -- Toggle with `:Gitsigns toggle_signs`
+  numhl      = false, -- Toggle with `:Gitsigns toggle_numhl`
+  linehl     = true, -- Toggle with `:Gitsigns toggle_linehl`
+  word_diff  = false, -- Toggle with `:Gitsigns toggle_word_diff`
+  watch_gitdir = {
+    follow_files = true
+  },
+  auto_attach = true,
+  attach_to_untracked = false,
+  current_line_blame = false, -- Toggle with `:Gitsigns toggle_current_line_blame`
+  current_line_blame_opts = {
+    virt_text = true,
+    virt_text_pos = 'eol', -- 'eol' | 'overlay' | 'right_align'
+    delay = 1000,
+    ignore_whitespace = false,
+    virt_text_priority = 100,
+    use_focus = true,
+  },
+  current_line_blame_formatter = '<author>, <author_time:%R> - <summary>',
+  sign_priority = 6,
+  update_debounce = 100,
+  status_formatter = nil, -- Use default
+  max_file_length = 40000, -- Disable if file is longer than this (in lines)
+  preview_config = {
+    -- Options passed to nvim_open_win
+    style = 'minimal',
+    relative = 'cursor',
+    row = 0,
+    col = 1
+  },
+}
