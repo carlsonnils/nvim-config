@@ -7,7 +7,6 @@ local function is_linux() return uname.sysname == "Linux" end
 local function is_macos() return uname.sysname == "Darwin" end
 
 
-
 -- OPTIONS
 --
 --
@@ -40,7 +39,6 @@ if is_linux() then
 end
 
 
-
 -- CUSTOM KEYMAPS
 --
 --
@@ -50,11 +48,10 @@ vim.keymap.set('n', '<Leader>h', '<C-w>h', { desc = 'Move to right window' })
 vim.keymap.set('n', '<Leader>j', '<C-w>j', { desc = 'Move to below window' })
 vim.keymap.set('n', '<Leader>k', '<C-w>k', { desc = 'Move to above window' })
 vim.keymap.set('n', '<Leader>l', '<C-w>l', { desc = 'Move to left window' })
-vim.keymap.set('n', '<Leader>u', ':resize +2<CR>', { desc = 'Move to right window' })
-vim.keymap.set('n', '<Leader>p', ':resize -2<CR>', { desc = 'Move to right window' })
-vim.keymap.set('n', '<Leader>i', ':vertical resize +2<CR>', { desc = 'Move to right window' })
-vim.keymap.set('n', '<Leader>o', ':vertical resize -2<CR>', { desc = 'Move to right window' })
-
+vim.keymap.set('n', '<Leader>u', ':resize +2<CR>', { desc = 'Increase window width' })
+vim.keymap.set('n', '<Leader>p', ':resize -2<CR>', { desc = 'Decrease window width' })
+vim.keymap.set('n', '<Leader>i', ':vertical resize +2<CR>', { desc = 'Increase window height' })
+vim.keymap.set('n', '<Leader>o', ':vertical resize -2<CR>', { desc = 'Decrease window height' })
 
 
 -- COLOR SCHEME
@@ -76,36 +73,6 @@ vim.pack.add({'https://github.com/nvim-treesitter/nvim-treesitter.git'})
 require('nvim-treesitter').setup(require('nvim-treesitter-setup'))
 
 
-
--- TELESCOPE
---
---
-vim.pack.add({
-    { src = 'https://github.com/nvim-lua/plenary.nvim.git' },
-    { src = 'https://github.com/sharkdp/fd.git' },
-    { src = 'https://github.com/nvim-telescope/telescope.nvim.git' },
-})
-local actions = require('telescope.actions')
-require('telescope').setup({
-  defaults = {
-    mappings = {
-      n = {  -- normal mode mappings
-        ["<C-b>"] = "delete_buffer",
-      },
-      i = {  -- insert mode mappings
-        -- ["<C-b>"] = "delete_buffer",
-      },
-    },
-  },
-})
-local builtin = require('telescope.builtin')
-vim.keymap.set('n', '<leader>ff', builtin.find_files, { desc = 'Telescope find files' })
-vim.keymap.set('n', '<leader>fg', builtin.live_grep, { desc = 'Telescope live grep' })
-vim.keymap.set('n', '<leader>fb', builtin.buffers, { desc = 'Telescope buffers' })
-vim.keymap.set('n', '<leader>fh', builtin.help_tags, { desc = 'Telescope help tags' })
-
-
-
 -- GLOBAL FLOATING WINDOW BORDERS
 --
 --
@@ -115,74 +82,6 @@ function vim.lsp.util.open_floating_preview(contents, syntax, opts, ...)
     opts.border = opts.border or "rounded"
     return orig_util_open_floating_preview(contents, syntax, opts, ...)
 end
-
-
-
--- LSP
---
---
--- mason: manage lsp servers
-vim.pack.add({'https://github.com/mason-org/mason.nvim.git'})
-require('mason').setup()
-
--- lspconfig
-vim.pack.add({'https://github.com/neovim/nvim-lspconfig'})
-
--- pyright
-vim.lsp.config('pyright', require('lsp.pyright'))
-vim.lsp.enable('pyright')
-require('pyright-setup')
-
--- lua language server
-vim.lsp.enable('lua_ls')
-
--- gopls language server
-vim.lsp.enable('gopls')
-
--- ruff for python
--- vim.lsp.config('ruff', require('lsp.ruff'))
--- vim.lsp.enable('ruff')
-
--- superhtml
-vim.lsp.enable('superhtml')
-
--- clangd
-vim.lsp.config('clangd', require('lsp.clangd'))
-vim.lsp.enable('clangd')
-
--- marksman
-vim.lsp.config('marksman', require('lsp.marksman'))
-vim.lsp.enable('marksman')
-
--- lsp keymaps
-local lsp_keymap_on_attach = function(client, bufnr)
-  local bufopts = { noremap=true, silent=true, buffer=bufnr }
-  vim.keymap.set('n', '<Leader>d', vim.lsp.buf.definition, bufopts)
-  vim.keymap.set('n', 'K', vim.lsp.buf.hover, bufopts)
-  vim.keymap.set('n', '<Leader>i', vim.lsp.buf.implementation, bufopts)
-  vim.keymap.set('n', '<Leader>rn', vim.lsp.buf.rename, bufopts)
-  vim.keymap.set('n', '<Leader>ca', vim.lsp.buf.code_action, bufopts)
-  vim.keymap.set('n', '<Leader>r', vim.lsp.buf.references, bufopts)
-  vim.keymap.set('n', '<Leader>f', function() vim.lsp.buf.format { async = true } end, bufopts)
-end
-vim.api.nvim_create_autocmd("LspAttach", {
-  pattern = { "*.py", "*.go", ".lua", ".html", ".css", ".c", ".js" },
-  callback = lsp_keymap_on_attach,
-})
-
-
-
--- MARKDOWN RENDERING
---
---
--- vim.pack.add({
---     -- { src = 'https://github.com/nvim-treesitter/nvim-treesitter' },    -- already added
---     { src = 'https://github.com/nvim-mini/mini.nvim' },            -- if you use the mini.nvim suite
---     { src = 'https://github.com/nvim-mini/mini.icons' },        -- if you use standalone mini plugins
---     { src = 'https://github.com/nvim-tree/nvim-web-devicons' }, -- if you prefer nvim-web-devicons
---     { src = 'https://github.com/MeanderingProgrammer/render-markdown.nvim' },
--- })
-
 
 
 -- Git Help
@@ -240,17 +139,3 @@ require('gitsigns').setup {
     col = 1
   },
 }
-
-
-
--- CSV Viewer
---
---
-vim.pack.add({
-    { src = "https://github.com/hat0uma/csvview.nvim.git" }
-})
-require('csvview').setup({
-    view = {
-        display_mode = "border",
-    }
-})
