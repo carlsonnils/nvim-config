@@ -17,14 +17,17 @@ vim.o.tabstop = 4
 vim.o.autoindent = true
 vim.o.number = true
 vim.o.relativenumber = true
-vim.o.wrap = false
+-- vim.o.wrap = false
 vim.o.sidescrolloff = 2
 vim.o.scrolloff = 2
+vim.o.colorcolumn = "80"
 vim.o.signcolumn = "yes:1"
 vim.o.undofile = true
 vim.opt.clipboard:append("unnamedplus")
 vim.g.mapleader = " "
 vim.g.localmapleader = " "
+vim.g.netrw_banner = 0
+-- vim.g.netrw_liststyle = 3
 if is_windows() then
     vim.opt.shell = "powershell"
     vim.opt.shellcmdflag = "-NoLogo -Command"
@@ -63,7 +66,6 @@ vim.cmd.colorscheme("kanagawa-lotus")
 -- local normal_bg = vim.api.nvim_get_hl(0, {name = 'Normal'}).bg
 -- local linenr_fg = vim.api.nvim_get_hl(0, {name = 'LineNr'}).fg
 -- vim.api.nvim_set_hl(0, 'LineNr', { bg = normal_bg, fg = linenr_fg })
-
 
 
 -- TREESITTER
