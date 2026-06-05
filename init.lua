@@ -53,10 +53,10 @@ vim.keymap.set('n', '<Leader>h', '<C-w>h', { desc = 'Move to right window' })
 vim.keymap.set('n', '<Leader>j', '<C-w>j', { desc = 'Move to below window' })
 vim.keymap.set('n', '<Leader>k', '<C-w>k', { desc = 'Move to above window' })
 vim.keymap.set('n', '<Leader>l', '<C-w>l', { desc = 'Move to left window' })
-vim.keymap.set('n', '<Leader>u', ':resize +2<CR>', { desc = 'Increase window width' })
-vim.keymap.set('n', '<Leader>p', ':resize -2<CR>', { desc = 'Decrease window width' })
-vim.keymap.set('n', '<Leader>i', ':vertical resize +2<CR>', { desc = 'Increase window height' })
-vim.keymap.set('n', '<Leader>o', ':vertical resize -2<CR>', { desc = 'Decrease window height' })
+vim.keymap.set('n', '<Leader>u', ':resize +4<CR>', { desc = 'Increase window width' })
+vim.keymap.set('n', '<Leader>p', ':resize -4<CR>', { desc = 'Decrease window width' })
+vim.keymap.set('n', '<Leader>i', ':vertical resize +4<CR>', { desc = 'Increase window height' })
+vim.keymap.set('n', '<Leader>o', ':vertical resize -4<CR>', { desc = 'Decrease window height' })
 
 
 -- COLOR SCHEME
