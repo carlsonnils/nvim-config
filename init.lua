@@ -46,7 +46,9 @@ end
 --
 --
 vim.keymap.set('n', '<Leader>tj', ':below sp | terminal<CR>i', { desc = 'Open terminal below' })
+vim.keymap.set('n', '<Leader>tk', ':above sp | terminal<CR>i', { desc = 'Open terminal above' })
 vim.keymap.set('n', '<Leader>tl', ':rightbelow vsp | terminal<CR>i', { desc = 'Open terminal right' })
+vim.keymap.set('n', '<Leader>th', ':leftabove vsp | terminal<CR>i', { desc = 'Open terminal left' })
 vim.keymap.set('n', '<Leader>h', '<C-w>h', { desc = 'Move to right window' })
 vim.keymap.set('n', '<Leader>j', '<C-w>j', { desc = 'Move to below window' })
 vim.keymap.set('n', '<Leader>k', '<C-w>k', { desc = 'Move to above window' })
