@@ -27,6 +27,7 @@ vim.opt.clipboard:append("unnamedplus")
 vim.g.mapleader = " "
 vim.g.localmapleader = " "
 vim.g.netrw_banner = 0
+vim.g.netrw_altv = 1
 -- vim.g.netrw_liststyle = 3
 if is_windows() then
     vim.opt.shell = "powershell"
@@ -36,7 +37,7 @@ if is_windows() then
 end
 if is_linux() then
     vim.opt.shell = "bash"
-    vim.opt.shellcmdflag = ""
+    vim.opt.shellcmdflag = "-c"
     vim.opt.shellquote = ""
     vim.opt.shellxquote = ""
 end
@@ -57,13 +58,14 @@ vim.keymap.set('n', '<Leader>u', ':resize +4<CR>', { desc = 'Increase window wid
 vim.keymap.set('n', '<Leader>p', ':resize -4<CR>', { desc = 'Decrease window width' })
 vim.keymap.set('n', '<Leader>i', ':vertical resize +4<CR>', { desc = 'Increase window height' })
 vim.keymap.set('n', '<Leader>o', ':vertical resize -4<CR>', { desc = 'Decrease window height' })
+require("quickfix-build").setup()
 
 
 -- COLOR SCHEME
 --
 --
 vim.pack.add({'https://github.com/rebelot/kanagawa.nvim.git'})
-vim.cmd.colorscheme("kanagawa-lotus")
+vim.cmd.colorscheme("kanagawa-dragon")
 -- vim.api.nvim_set_hl(0, 'Normal', { bg = 'NONE' })
 -- local normal_bg = vim.api.nvim_get_hl(0, {name = 'Normal'}).bg
 -- local linenr_fg = vim.api.nvim_get_hl(0, {name = 'LineNr'}).fg
