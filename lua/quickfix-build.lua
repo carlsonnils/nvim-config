@@ -3,6 +3,14 @@
 
 local M = {}
 
+local uname = vim.loop.os_uname()
+local sqlMakePrg = ''
+if uname.sysname == "Windows_NT" then
+    sqlMakePrg = 'usql-page %'
+else
+    sqlMakePrg = 'usql %'
+end
+
 local configs = {
   go = {
     makeprg = "go build ./...",
@@ -29,7 +37,7 @@ local configs = {
     errorformat = "%f:%l: %m",
   },
   sql = {
-    makeprg = 'sqlcmd -W -s "," -i %',
+    makeprg = sqlMakePrg,
     errorformat = ' Msg %n\\, Level %*\\d\\, State %*\\d\\, Server %.%#\\, Line %l',
   },
 }

@@ -34,6 +34,7 @@ if is_windows() then
     vim.opt.shellcmdflag = "-NoLogo -Command"
     vim.opt.shellquote = ""
     vim.opt.shellxquote = ""
+    vim.opt.shellpipe = "*> %s"
 end
 if is_linux() then
     vim.opt.shell = "bash"
@@ -65,7 +66,7 @@ require("quickfix-build").setup()
 --
 --
 vim.pack.add({'https://github.com/rebelot/kanagawa.nvim.git'})
-vim.cmd.colorscheme("kanagawa-dragon")
+vim.cmd.colorscheme("kanagawa-wave")
 -- vim.api.nvim_set_hl(0, 'Normal', { bg = 'NONE' })
 -- local normal_bg = vim.api.nvim_get_hl(0, {name = 'Normal'}).bg
 -- local linenr_fg = vim.api.nvim_get_hl(0, {name = 'LineNr'}).fg
