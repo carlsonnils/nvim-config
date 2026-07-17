@@ -34,7 +34,7 @@ if is_windows() then
     vim.opt.shellcmdflag = "-NoLogo -Command"
     vim.opt.shellquote = ""
     vim.opt.shellxquote = ""
-    vim.opt.shellpipe = "*> %s"
+    vim.opt.shellpipe = "2>&1 | Out-File -FilePath %s -Encoding ascii -Force"
 end
 if is_linux() then
     vim.opt.shell = "bash"
