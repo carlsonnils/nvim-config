@@ -75,7 +75,7 @@ On Arch Linux with `yay`, you can install everything at once using the included 
 | `<Esc>` | Normal | Clear search highlight (`:nohlsearch`) |
 | `<Esc><Esc>` | Terminal | Exit terminal mode back to Normal mode |
 
-### Windows & Terminals
+### Windows, Tabs & Terminals
 | Keybind | Mode | Action |
 |---|---|---|
 | `<Leader>h` | Normal | Move to left window |
@@ -86,6 +86,12 @@ On Arch Linux with `yay`, you can install everything at once using the included 
 | `<Leader>p` | Normal | Decrease window height (`:resize -4`) |
 | `<Leader>i` | Normal | Increase window width (`:vertical resize +4`) |
 | `<Leader>o` | Normal | Decrease window width (`:vertical resize -4`) |
+| `gt` / `gT` | Normal | Next / previous tab *(Neovim default)* |
+| `{N}gt` | Normal | Jump to tab `N`, e.g. `1gt`, `2gt` *(Neovim default)* |
+| `g<Tab>` | Normal | Switch to last accessed tab *(Neovim default)* |
+| `<C-w>T` | Normal | Move current split window into its own new tab *(Neovim default)* |
+| `:tabnew` / `:tabclose` / `:tabonly` | Command | Open new tab / close current tab / close all other tabs *(Neovim default)* |
+| `<Leader>tf` | Normal | Toggle persistent **floating terminal** (`<Esc><Esc>` then `q`/`<Esc>` hides; `exit`/`<C-d>` quits) |
 | `<Leader>tj` | Normal | Open terminal split below |
 | `<Leader>tk` | Normal | Open terminal split above |
 | `<Leader>tl` | Normal | Open vertical terminal split right |
@@ -98,12 +104,16 @@ On Arch Linux with `yay`, you can install everything at once using the included 
 |---|---|---|
 | `-` | Normal (anywhere) | Open parent directory of current file in Oil |
 | `<Leader>ee` | Normal (anywhere) | Open Oil in current window |
+| `<Leader>ed` | Normal (anywhere) | Prompt for a directory path (`<Tab>` completion) and open it in Oil |
 | `<Leader>ek` | Normal (anywhere) | Open Oil in horizontal split **above** |
 | `<Leader>ej` | Normal (anywhere) | Open Oil in horizontal split **below** |
 | `<Leader>eh` | Normal (anywhere) | Open Oil in vertical split **left** |
 | `<Leader>el` | Normal (anywhere) | Open Oil in vertical split **right** |
 | `<Leader>ef` | Normal (anywhere) | Open Oil in a **floating window** (`<C-c>` inside float to close) |
 | `<CR>` | Inside Oil buffer | Open file or enter directory under cursor |
+| `<C-h>` | Inside Oil buffer | Open entry under cursor in a **horizontal split** *(built-in)* |
+| `<C-s>` | Inside Oil buffer | Open entry under cursor in a **vertical split** *(built-in)* |
+| `<C-t>` | Inside Oil buffer | Open entry under cursor in a **new tab** *(built-in)* |
 | `-` | Inside Oil buffer | Go up to parent directory |
 | `_` | Inside Oil buffer | Open Neovim's current working directory |
 | `g.` | Inside Oil buffer | Toggle hidden files |
@@ -206,13 +216,16 @@ Activate it either:
 - **Per project:** Create an empty `.mssql` file in your project root (`touch .mssql`); opening any `.sql` file in that repo auto-activates `mssql.nvim`.
 - **Manually anytime:** Press `<Leader>mm` (toggles on/off) or run `:MssqlStart` (`:MssqlStop` to turn off).
 
-Once activated, `:MSSQL <Command>` and the `<Leader>m` keymaps become available. Query results are exported as full untruncated CSVs and opened in **`dataframe-textual` (`dv`)** inside a **floating window** by default (or a **bottom split** via `<Leader>mv` / `:MssqlResultsLayout`). When a batch returns multiple tables, all tables open together as native tabs inside `dv` (`table_1-1.csv`, `table_1-2.csv`, …).
+Once activated, `:MSSQL <Command>` and the `<Leader>m` keymaps become available. Every SQL execution opens in a **floating window** by default (or a **bottom split** via `<Leader>mv` / `:MssqlResultsLayout`):
+- **Tabular data:** Exported as full untruncated CSVs and opened in **`dataframe-textual` (`dv`)**. When a batch returns multiple tables, all tables open together as native tabs inside `dv` (`table_1-1.csv`, `table_1-2.csv`, …).
+- **Non-data statements, 0-row queries, & errors:** DDL (`DROP TABLE`, `CREATE TABLE`, `ALTER`), DML row counts (`DELETE`, `INSERT`, `UPDATE`), `PRINT` output, 0-row `SELECT` headers, and SQL errors open in a centered message/result float (`q` / `<Esc>` to close).
 
 | Keybind | Mode | Action |
 |---|---|---|
 | `<Leader>mm` | Normal | Toggle `mssql.nvim` on/off (`:MssqlStart` / `:MssqlStop`) |
-| `<Leader>mv` | Normal | Toggle `dv` results window between **floating window** and **bottom split** (`:MssqlResultsLayout`) |
-| `<Leader>mo` | Normal | Reopen the last query's `dv` results (`:MssqlResults`) |
+| `<Leader>mv` | Normal | Toggle MSSQL results window between **floating window** and **bottom split** (`:MssqlResultsLayout`) |
+| `<Leader>mo` | Normal | Reopen the last query's results or messages (`:MssqlResults`) |
+| `q` / `<Esc>` | Message/0-row float | Close the SQL message/error/0-row result float |
 | `b` / `B` | Inside `dv` | Next / previous result table tab (`S` opens the Sheets overview modal) |
 | `Enter` / `Tab` | Inside `dv` | Row detail modal (key-value pairs) / Cell detail modal (`Shift+Tab` cycles cursor mode) |
 | `[` / `]` | Inside `dv` | Sort current column ascending / descending (`I` stats, `F` frequency counts, `Q` SQL filter) |
@@ -227,6 +240,7 @@ Once activated, `:MSSQL <Command>` and the `<Leader>m` keymaps become available.
 | `<Leader>ml` | Normal | Cancel running query (`:MSSQL CancelQuery`) |
 | `<Leader>ms` | Normal | Switch database (in query buffer) or save results (`.csv`/`.json`/`.xlsx`/`.xml` in results buffer) |
 | `<Leader>mf` | Normal | Find table/view/proc/function & generate script (`:MSSQL Find`) |
+| `<C-s>` / `<C-v>` / `<C-t>` | Inside `<Leader>mf` | Open generated SQL script in a **horizontal split** (`<C-s>`), **vertical split** (`<C-v>`), or **new tab** (`<C-t>`) |
 | `<Leader>me` | Normal | Edit `connections.json` (`:MSSQL EditConnections`) |
 | `<Leader>mr` | Normal | Refresh object cache (`:MSSQL RefreshCache`) |
 
