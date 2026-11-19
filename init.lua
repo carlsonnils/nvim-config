@@ -140,6 +140,12 @@ MiniIcons.mock_nvim_web_devicons()
 -- OIL FILE BROWSER
 require('oil').setup({
     default_file_explorer = true,
+    columns = {
+        "permissions",
+        "size",
+        "mtime",
+        "icon",
+    },
     view_options = {
         show_hidden = true,
     },
@@ -1097,7 +1103,48 @@ vim.keymap.set('n', '<Leader>rv', toggle_runner_layout, { desc = 'Toggle runner 
 
 
 -- KEYBINDINGS HELP (:Keybinds / <Leader>?)
+local help_win = nil
+local help_buf = nil
+
+local function find_leaf_bin()
+    local bin = vim.fn.exepath('leaf')
+    if bin ~= '' then
+        return bin
+    end
+    for _, candidate in ipairs({ '~/.local/bin/leaf', '~/.cargo/bin/leaf' }) do
+        local expanded = vim.fn.expand(candidate)
+        if vim.fn.executable(expanded) == 1 then
+            return expanded
+        end
+    end
+    return nil
+end
+
+local function find_keybinds_toc_index(lines)
+    local in_fence = false
+    local h2_idx = 0
+    for _, line in ipairs(lines) do
+        if line:match('^%s*```') then
+            in_fence = not in_fence
+        elseif not in_fence and line:match('^##%s+') then
+            h2_idx = h2_idx + 1
+            if line:match('^##%s+.*Keybindings') then
+                return h2_idx
+            end
+        end
+    end
+    return nil
+end
+
 local function open_keybinds_help()
+    if help_win and vim.api.nvim_win_is_valid(help_win) and help_buf and vim.api.nvim_buf_is_valid(help_buf) then
+        vim.api.nvim_set_current_win(help_win)
+        if vim.bo[help_buf].buftype == 'terminal' then
+            vim.cmd.startinsert()
+        end
+        return
+    end
+
     local guide_path = init_dir .. '/USER_GUIDE.md'
     if vim.fn.filereadable(guide_path) ~= 1 then
         guide_path = vim.fn.stdpath('config') .. '/USER_GUIDE.md'
@@ -1108,6 +1155,80 @@ local function open_keybinds_help()
     end
 
     local all_lines = vim.fn.readfile(guide_path)
+    local leaf_bin = find_leaf_bin()
+
+    if leaf_bin then
+        local toc_idx = find_keybinds_toc_index(all_lines)
+        local buf = vim.api.nvim_create_buf(false, true)
+        vim.bo[buf].bufhidden = 'wipe'
+        vim.bo[buf].swapfile = false
+
+        local width = math.max(60, math.min(130, math.floor(vim.o.columns * 0.88)))
+        local height = math.max(15, math.floor(vim.o.lines * 0.85))
+        local win = vim.api.nvim_open_win(buf, true, {
+            relative = 'editor',
+            width = width,
+            height = height,
+            row = math.max(0, math.floor((vim.o.lines - height) / 2) - 1),
+            col = math.max(0, math.floor((vim.o.columns - width) / 2)),
+            style = 'minimal',
+            border = 'rounded',
+            title = ' User Guide — Keybindings (q close | t TOC | / search | ? leaf help) ',
+            title_pos = 'center',
+        })
+        help_win = win
+        help_buf = buf
+
+        local job_id = nil
+        local jumped = false
+
+        local function close_help()
+            if job_id and job_id > 0 then
+                pcall(vim.fn.jobstop, job_id)
+                job_id = nil
+            end
+            if vim.api.nvim_win_is_valid(win) then
+                pcall(vim.api.nvim_win_close, win, true)
+            end
+            if vim.api.nvim_buf_is_valid(buf) then
+                pcall(vim.api.nvim_buf_delete, buf, { force = true })
+            end
+            if help_win == win then
+                help_win = nil
+            end
+            if help_buf == buf then
+                help_buf = nil
+            end
+        end
+
+        vim.keymap.set('n', 'q', close_help, { buffer = buf, nowait = true, desc = 'Close keybindings help' })
+        vim.keymap.set('n', '<Esc>', close_help, { buffer = buf, nowait = true, desc = 'Close keybindings help' })
+
+        vim.api.nvim_buf_call(buf, function()
+            job_id = vim.fn.jobstart({ leaf_bin, guide_path }, {
+                term = true,
+                on_stdout = function(_, data)
+                    if not jumped and toc_idx and toc_idx >= 1 and toc_idx <= 9 and data and #table.concat(data, '') > 0 then
+                        jumped = true
+                        vim.defer_fn(function()
+                            if job_id and job_id > 0 and vim.api.nvim_buf_is_valid(buf) then
+                                pcall(vim.api.nvim_chan_send, job_id, tostring(toc_idx))
+                            end
+                        end, 20)
+                    end
+                end,
+                on_exit = function()
+                    job_id = nil
+                    vim.schedule(close_help)
+                end,
+            })
+        end)
+
+        vim.cmd.startinsert()
+        return
+    end
+
+    -- Fallback when `leaf` is not installed: native read-only Markdown float
     local section = {}
     local in_section = false
     for _, line in ipairs(all_lines) do
@@ -1151,6 +1272,8 @@ local function open_keybinds_help()
         title = ' Keybindings (q / <Esc> to close) ',
         title_pos = 'center',
     })
+    help_win = win
+    help_buf = buf
 
     vim.wo[win].wrap = true
     vim.wo[win].linebreak = true
@@ -1161,10 +1284,16 @@ local function open_keybinds_help()
         if vim.api.nvim_win_is_valid(win) then
             vim.api.nvim_win_close(win, true)
         end
+        if help_win == win then
+            help_win = nil
+        end
+        if help_buf == buf then
+            help_buf = nil
+        end
     end
     vim.keymap.set('n', 'q', close_help, { buffer = buf, nowait = true, desc = 'Close keybindings help' })
     vim.keymap.set('n', '<Esc>', close_help, { buffer = buf, nowait = true, desc = 'Close keybindings help' })
 end
 
-vim.api.nvim_create_user_command('Keybinds', open_keybinds_help, { desc = 'Show keybindings from USER_GUIDE.md' })
-vim.keymap.set('n', '<Leader>?', open_keybinds_help, { desc = 'Show keybindings help' })
+vim.api.nvim_create_user_command('Keybinds', open_keybinds_help, { desc = 'Show USER_GUIDE.md keybindings in leaf' })
+vim.keymap.set('n', '<Leader>?', open_keybinds_help, { desc = 'Show keybindings help (leaf)' })

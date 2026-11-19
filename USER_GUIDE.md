@@ -47,6 +47,7 @@ On Arch Linux with `yay`, you can install everything at once using the included 
 - `rg` (`ripgrep`) — Required for live grep (`<Leader>fg`)
 - `fd` — Optional, speeds up file finding in `fzf-lua`
 - `tree-sitter` (`tree-sitter-cli`) + a C compiler (`gcc` or `clang`) — Required by `nvim-treesitter` to compile syntax parsers
+- `leaf` (`leaf-markdown-viewer`) — Rich terminal Markdown viewer used by `<Leader>?` / `:Keybinds` (falls back to a native floating Markdown buffer if not installed)
 
 ### Language Servers & Formatters
 | Language | Treesitter Parser | LSP Server Binary | Formatter Binary | Notes |
@@ -70,7 +71,7 @@ On Arch Linux with `yay`, you can install everything at once using the included 
 ### General
 | Keybind | Mode | Action |
 |---|---|---|
-| `<Leader>?` | Normal | Open floating keybindings guide (`:Keybinds`; close with `q` / `<Esc>`) |
+| `<Leader>?` | Normal | Open `USER_GUIDE.md` in `leaf` inside a floating window at the Keybindings section (`:Keybinds`; `t` TOC, `/` search, `?` `leaf` help, `q` close) |
 | `<Esc>` | Normal | Clear search highlight (`:nohlsearch`) |
 | `<Esc><Esc>` | Terminal | Exit terminal mode back to Normal mode |
 
@@ -233,7 +234,7 @@ Once activated, `:MSSQL <Command>` and the `<Leader>m` keymaps become available.
 
 ## 4. Useful Troubleshooting Commands
 
-- `:Keybinds` — Open the keybindings section of `USER_GUIDE.md` in a floating window
+- `:Keybinds` — Open `USER_GUIDE.md` in `leaf` inside a floating window at the Keybindings section (falls back to native Markdown float if `leaf` is not installed)
 - `:RunFile` / `:RunLayout` — Run the current file or toggle runner output between floating window and bottom split
 - `:GitDiffHunk` — Show floating git diff for the current hunk or a `<line1>,<line2>` range
 - `:MssqlStart` / `:MssqlStop` — Manually start or stop `mssql.nvim` for the current session
