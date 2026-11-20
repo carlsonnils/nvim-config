@@ -188,6 +188,7 @@ vim.pack.add({
     'https://github.com/rebelot/kanagawa.nvim.git',
     'https://github.com/nvim-mini/mini.icons.git',
     'https://github.com/stevearc/oil.nvim.git',
+    'https://github.com/nvim-tree/nvim-tree.lua.git',
     'https://github.com/ibhagwan/fzf-lua.git',
     'https://github.com/lewis6991/gitsigns.nvim.git',
     'https://github.com/nvim-treesitter/nvim-treesitter.git',
@@ -250,6 +251,88 @@ vim.keymap.set('n', '<Leader>ej', '<Cmd>belowright Oil<CR>', { desc = 'Open Oil 
 vim.keymap.set('n', '<Leader>eh', '<Cmd>aboveleft vertical Oil<CR>', { desc = 'Open Oil split left' })
 vim.keymap.set('n', '<Leader>el', '<Cmd>belowright vertical Oil<CR>', { desc = 'Open Oil split right' })
 vim.keymap.set('n', '<Leader>ef', '<Cmd>Oil --float<CR>', { desc = 'Open Oil in floating window' })
+
+
+-- NVIM-TREE FILE EXPLORER (<Leader>nt toggle, <Leader>nf reveal, <Leader>nv sidebar/float)
+local nvim_tree_layout = 'sidebar' -- default 'sidebar'; toggle to 'float' with <Leader>nv / :NvimTreeLayout
+
+local function setup_nvim_tree()
+    local is_float = (nvim_tree_layout == 'float')
+    require('nvim-tree').setup({
+        hijack_directories = {
+            enable = false,
+        },
+        hijack_cursor = true,
+        sync_root_with_cwd = true,
+        update_focused_file = {
+            enable = true,
+        },
+        filters = {
+            dotfiles = false,
+            git_ignored = false,
+        },
+        renderer = {
+            group_empty = true,
+            highlight_git = 'name',
+        },
+        diagnostics = {
+            enable = true,
+        },
+        actions = {
+            open_file = {
+                quit_on_open = is_float,
+            },
+        },
+        view = is_float and {
+            float = {
+                enable = true,
+                quit_on_focus_loss = true,
+                open_win_config = function()
+                    local width = math.min(math.max(50, math.floor(vim.o.columns * 0.6)), math.max(30, vim.o.columns - 4))
+                    local height = math.min(math.max(15, math.floor(vim.o.lines * 0.8)), math.max(8, vim.o.lines - 4))
+                    return {
+                        relative = 'editor',
+                        border = 'rounded',
+                        width = width,
+                        height = height,
+                        row = math.max(0, math.floor((vim.o.lines - height) / 2) - 1),
+                        col = math.max(0, math.floor((vim.o.columns - width) / 2)),
+                        title = ' NvimTree (<Leader>nv float/sidebar | q close) ',
+                        title_pos = 'center',
+                    }
+                end,
+            },
+        } or {
+            side = 'left',
+            width = 35,
+            float = {
+                enable = false,
+            },
+        },
+    })
+end
+
+setup_nvim_tree()
+
+local function toggle_nvim_tree_layout()
+    local api = require('nvim-tree.api')
+    local was_open = api.tree.is_visible()
+    if was_open then
+        api.tree.close()
+    end
+    nvim_tree_layout = (nvim_tree_layout == 'sidebar') and 'float' or 'sidebar'
+    setup_nvim_tree()
+    if was_open then
+        api.tree.open()
+    else
+        vim.notify('NvimTree layout set to: ' .. nvim_tree_layout, vim.log.levels.INFO)
+    end
+end
+
+vim.api.nvim_create_user_command('NvimTreeLayout', toggle_nvim_tree_layout, { desc = 'Toggle NvimTree between left sidebar and float' })
+vim.keymap.set('n', '<Leader>nt', '<Cmd>NvimTreeToggle<CR>', { desc = 'Toggle NvimTree file explorer' })
+vim.keymap.set('n', '<Leader>nf', '<Cmd>NvimTreeFindFile<CR>', { desc = 'Reveal current file in NvimTree' })
+vim.keymap.set('n', '<Leader>nv', toggle_nvim_tree_layout, { desc = 'Toggle NvimTree layout (sidebar/float)' })
 
 
 -- GIT SIGNS (sign column indicators + hunk/line diff popup)

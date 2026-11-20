@@ -17,8 +17,9 @@ On first launch, `vim.pack` will prompt to clone and install the configured plug
 | Plugin | Purpose |
 |---|---|
 | `rebelot/kanagawa.nvim` | Colorschemes (`wave`, `dragon`, `lotus`) |
-| `nvim-mini/mini.icons` | Filetype icons for Oil and fzf-lua (requires a Nerd Font) |
-| `stevearc/oil.nvim` | Buffer-based file explorer (replaces `netrw`) |
+| `nvim-mini/mini.icons` | Filetype icons for Oil, nvim-tree, and fzf-lua (requires a Nerd Font) |
+| `stevearc/oil.nvim` | Buffer-based file explorer (default for directories; replaces `netrw`) |
+| `nvim-tree/nvim-tree.lua` | Project file tree explorer (left sidebar by default; switchable to float) |
 | `ibhagwan/fzf-lua` | Fuzzy finder for files, grep, buffers, symbols, and diagnostics |
 | `lewis6991/gitsigns.nvim` | Git sign-column change indicators & hunk diff popups |
 | `nvim-treesitter/nvim-treesitter` | Syntax highlighting parsers & queries |
@@ -119,6 +120,27 @@ On Arch Linux with `yay`, you can install everything at once using the included 
 | `g.` | Inside Oil buffer | Toggle hidden files |
 | `g?` | Inside Oil buffer | Show all Oil buffer keymaps |
 | `:w` | Inside Oil buffer | Apply filesystem edits (create, rename, move, delete) |
+
+### File Tree (`nvim-tree.lua`)
+Defaults to a **left sidebar** (`width = 35`) and can be switched to a **centered floating window** and back via `<Leader>nv` (`:NvimTreeLayout`). `hijack_directories` is disabled so opening directories (`nvim .` / `:e dir/`) still opens Oil.
+
+| Keybind | Context | Action |
+|---|---|---|
+| `<Leader>nt` | Normal (anywhere) | Toggle `nvim-tree` open/closed (`:NvimTreeToggle`) |
+| `<Leader>nf` | Normal (anywhere) | Reveal and focus the current file in `nvim-tree` (`:NvimTreeFindFile`) |
+| `<Leader>nv` | Normal (anywhere) | Switch `nvim-tree` between **left sidebar** and **floating window** (`:NvimTreeLayout`) |
+| `<CR>` / `o` | Inside `nvim-tree` | Open file or expand/collapse directory *(built-in)* |
+| `<C-x>` | Inside `nvim-tree` | Open file in a **horizontal split** *(built-in)* |
+| `<C-v>` | Inside `nvim-tree` | Open file in a **vertical split** *(built-in)* |
+| `<C-t>` | Inside `nvim-tree` | Open file in a **new tab** *(built-in)* |
+| `a` | Inside `nvim-tree` | Create file or directory (end with `/` for directory) *(built-in)* |
+| `r` | Inside `nvim-tree` | Rename file or directory *(built-in)* |
+| `d` | Inside `nvim-tree` | Delete file or directory *(built-in)* |
+| `c` / `x` / `p` | Inside `nvim-tree` | Copy / cut / paste file or directory *(built-in)* |
+| `H` | Inside `nvim-tree` | Toggle hidden/dotfiles *(built-in)* |
+| `R` | Inside `nvim-tree` | Refresh tree *(built-in)* |
+| `g?` | Inside `nvim-tree` | Show all `nvim-tree` keymaps *(built-in)* |
+| `q` | Inside `nvim-tree` | Close `nvim-tree` window *(built-in)* |
 
 ### Fuzzy Finding (`fzf-lua`)
 | Keybind | Mode | Action |
@@ -249,6 +271,7 @@ Once activated, `:MSSQL <Command>` and the `<Leader>m` keymaps become available.
 ## 4. Useful Troubleshooting Commands
 
 - `:Keybinds` — Open `USER_GUIDE.md` in `leaf` inside a floating window at the Keybindings section (falls back to native Markdown float if `leaf` is not installed)
+- `:NvimTreeLayout` — Switch `nvim-tree` between left sidebar and floating window (`<Leader>nv`)
 - `:RunFile` / `:RunLayout` — Run the current file or toggle runner output between floating window and bottom split
 - `:GitDiffHunk` — Show floating git diff for the current hunk or a `<line1>,<line2>` range
 - `:MssqlStart` / `:MssqlStop` — Manually start or stop `mssql.nvim` for the current session
