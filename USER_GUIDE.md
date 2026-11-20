@@ -239,15 +239,17 @@ Activate it either:
 - **Manually anytime:** Press `<Leader>mm` (toggles on/off) or run `:MssqlStart` (`:MssqlStop` to turn off).
 
 Once activated, `:MSSQL <Command>` and the `<Leader>m` keymaps become available. Every SQL execution opens in a **floating window** by default (or a **bottom split** via `<Leader>mv` / `:MssqlResultsLayout`):
-- **Tabular data:** Exported as full untruncated CSVs and opened in **`dataframe-textual` (`dv`)**. When a batch returns multiple tables, all tables open together as native tabs inside `dv` (`table_1-1.csv`, `table_1-2.csv`, …).
-- **Non-data statements, 0-row queries, & errors:** DDL (`DROP TABLE`, `CREATE TABLE`, `ALTER`), DML row counts (`DELETE`, `INSERT`, `UPDATE`), `PRINT` output, 0-row `SELECT` headers, and SQL errors open in a centered message/result float (`q` / `<Esc>` to close).
+- **Tabular data & stored procedure messages:** Exported as full untruncated CSVs and opened in **`dataframe-textual` (`dv`)** (`1: Results`), with a companion **`2: Messages`** tab in the same window (`<M-m>` / `<F2>` or `<Leader>mg` to flip between tables and `PRINT` output, row counts, execution time, and SQL errors without closing `dv`). Multiple result sets open as native tabs inside `dv` (`b`/`B`), including completed `SELECT` tables from stored procedures/batches that error partway through.
+- **Non-data statements, 0-row queries, & errors:** DDL (`DROP TABLE`, `CREATE TABLE`, `ALTER`), DML row counts (`DELETE`, `INSERT`, `UPDATE`), `PRINT` output, 0-row `SELECT` headers, and SQL errors open directly in the message/result view (`q` / `<Esc>` to close).
 
 | Keybind | Mode | Action |
 |---|---|---|
 | `<Leader>mm` | Normal | Toggle `mssql.nvim` on/off (`:MssqlStart` / `:MssqlStop`) |
 | `<Leader>mv` | Normal | Toggle MSSQL results window between **floating window** and **bottom split** (`:MssqlResultsLayout`) |
-| `<Leader>mo` | Normal | Reopen the last query's results or messages (`:MssqlResults`) |
-| `q` / `<Esc>` | Message/0-row float | Close the SQL message/error/0-row result float |
+| `<Leader>mo` | Normal | Reopen the last query's results (or messages if no tables) (`:MssqlResults`) |
+| `<Leader>mg` | Normal | Open or toggle the last query's **Messages** tab (`PRINT` output, row counts, errors) (`:MssqlMessages`) |
+| `<M-m>` / `<F2>` | Inside `dv` or Messages | Switch between **`1: Results` (`dv`)** and **`2: Messages`** tabs (`m` or `<Tab>` in Messages also returns to Results) |
+| `q` / `<Esc>` | Messages / 0-row view | Close the SQL message/error/0-row result window |
 | `b` / `B` | Inside `dv` | Next / previous result table tab (`S` opens the Sheets overview modal) |
 | `Enter` / `Tab` | Inside `dv` | Row detail modal (key-value pairs) / Cell detail modal (`Shift+Tab` cycles cursor mode) |
 | `[` / `]` | Inside `dv` | Sort current column ascending / descending (`I` stats, `F` frequency counts, `Q` SQL filter) |
@@ -276,7 +278,8 @@ Once activated, `:MSSQL <Command>` and the `<Leader>m` keymaps become available.
 - `:GitDiffHunk` — Show floating git diff for the current hunk or a `<line1>,<line2>` range
 - `:MssqlStart` / `:MssqlStop` — Manually start or stop `mssql.nvim` for the current session
 - `:MssqlResultsLayout` — Toggle `dv` query results between floating window and bottom split
-- `:MssqlResults` — Reopen the most recent query results in `dv`
+- `:MssqlResults` — Reopen the most recent query results (`1: Results` in `dv`, or `Messages` if no tables)
+- `:MssqlMessages` — Open or toggle the most recent query's `2: Messages` tab (`PRINT` logs, row counts, errors)
 - `:MssqlSaveCsv [path]` — Copy the first exported result CSV directly to a `.csv` file (or press `<C-t>` inside `dv`)
 - `:checkhealth` — Check overall Neovim, Treesitter, and LSP health
 - `:checkhealth vim.lsp` — Inspect active LSP clients attached to buffers

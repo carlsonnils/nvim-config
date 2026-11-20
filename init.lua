@@ -836,6 +836,7 @@ end, { desc = 'Format buffer or selection' })
 local mssql_initialized = false
 local mssql_active = false
 local mssql_results_layout = 'float' -- default 'float'; toggle to 'split' with <Leader>mv / :MssqlResultsLayout
+local mssql_active_tab = 'results'   -- 'results' (dv) or 'messages' (PRINT / row counts / errors)
 local mssql_results_win = nil
 local mssql_origin_win = nil
 local mssql_dv_buf = nil
@@ -870,6 +871,21 @@ local function find_dv_bin()
     return nil
 end
 
+local function has_mssql_dv_results()
+    return find_dv_bin() ~= nil and #mssql_csv_items > 0
+end
+
+local function count_mssql_user_messages()
+    local n = 0
+    for _, msg in ipairs(mssql_messages) do
+        local first = msg.lines and msg.lines[1] or ''
+        if not first:match('^Total execution time:') then
+            n = n + 1
+        end
+    end
+    return n
+end
+
 local function is_internal_mssql_query(query)
     if type(query) ~= 'string' then
         return false
@@ -900,6 +916,8 @@ vim.api.nvim_create_autocmd('VimLeavePre', {
     end,
 })
 
+local open_mssql_results
+
 local function close_mssql_results_win()
     if mssql_results_win and vim.api.nvim_win_is_valid(mssql_results_win) then
         pcall(vim.api.nvim_win_close, mssql_results_win, true)
@@ -908,6 +926,17 @@ local function close_mssql_results_win()
     if mssql_origin_win and vim.api.nvim_win_is_valid(mssql_origin_win) then
         vim.api.nvim_set_current_win(mssql_origin_win)
     end
+end
+
+local function switch_to_mssql_results_tab()
+    if has_mssql_dv_results() then
+        open_mssql_results(true, 'results')
+    end
+end
+
+local function switch_to_mssql_messages_tab()
+    vim.cmd.stopinsert()
+    open_mssql_results(true, 'messages')
 end
 
 local function render_mssql_msg_buf()
@@ -936,17 +965,17 @@ local function render_mssql_msg_buf()
         lines[#lines + 1] = ''
     end
 
+    local exec_time_line = nil
     for _, msg in ipairs(mssql_messages) do
         local is_exec_time = msg.lines[1] and msg.lines[1]:match('^Total execution time:') ~= nil
-        if is_exec_time and #lines > 0 and lines[#lines] ~= '' then
-            lines[#lines + 1] = ''
-        end
-        for _, l in ipairs(msg.lines) do
-            lines[#lines + 1] = l
-            if msg.is_error then
-                line_hls[#lines] = 'DiagnosticError'
-            elseif is_exec_time then
-                line_hls[#lines] = 'Comment'
+        if is_exec_time then
+            exec_time_line = msg.lines[1]
+        else
+            for _, l in ipairs(msg.lines) do
+                lines[#lines + 1] = l
+                if msg.is_error then
+                    line_hls[#lines] = 'DiagnosticError'
+                end
             end
         end
     end
@@ -958,11 +987,17 @@ local function render_mssql_msg_buf()
         else
             lines[#lines + 1] = 'Commands completed successfully.'
         end
-        if mssql_last_elapsed and mssql_last_elapsed ~= '' then
+    end
+
+    if not exec_time_line and mssql_last_elapsed and mssql_last_elapsed ~= '' then
+        exec_time_line = 'Total execution time: ' .. mssql_last_elapsed
+    end
+    if exec_time_line then
+        if #lines > 0 and lines[#lines] ~= '' then
             lines[#lines + 1] = ''
-            lines[#lines + 1] = 'Total execution time: ' .. mssql_last_elapsed
-            line_hls[#lines] = 'Comment'
         end
+        lines[#lines + 1] = exec_time_line
+        line_hls[#lines] = 'Comment'
     end
 
     if not (mssql_msg_buf and vim.api.nvim_buf_is_valid(mssql_msg_buf)) then
@@ -972,6 +1007,10 @@ local function render_mssql_msg_buf()
         vim.bo[mssql_msg_buf].swapfile = false
         vim.keymap.set('n', 'q', close_mssql_results_win, { buffer = mssql_msg_buf, nowait = true, desc = 'Close MSSQL results' })
         vim.keymap.set('n', '<Esc>', close_mssql_results_win, { buffer = mssql_msg_buf, nowait = true, desc = 'Close MSSQL results' })
+        vim.keymap.set('n', '<M-m>', switch_to_mssql_results_tab, { buffer = mssql_msg_buf, nowait = true, desc = 'Switch to MSSQL Results tab' })
+        vim.keymap.set('n', '<F2>', switch_to_mssql_results_tab, { buffer = mssql_msg_buf, nowait = true, desc = 'Switch to MSSQL Results tab' })
+        vim.keymap.set('n', 'm', switch_to_mssql_results_tab, { buffer = mssql_msg_buf, nowait = true, desc = 'Switch to MSSQL Results tab' })
+        vim.keymap.set('n', '<Tab>', switch_to_mssql_results_tab, { buffer = mssql_msg_buf, nowait = true, desc = 'Switch to MSSQL Results tab' })
     end
 
     vim.bo[mssql_msg_buf].readonly = false
@@ -989,7 +1028,9 @@ local function render_mssql_msg_buf()
         })
     end
 
-    vim.b[mssql_msg_buf].query_result_info = mssql_table_fallbacks[1] and mssql_table_fallbacks[1].info or nil
+    vim.b[mssql_msg_buf].query_result_info = (mssql_table_fallbacks[1] and mssql_table_fallbacks[1].info)
+        or (mssql_csv_items[1] and mssql_csv_items[1].info)
+        or nil
     if has_md_table then
         vim.bo[mssql_msg_buf].filetype = 'markdown'
         pcall(vim.treesitter.start, mssql_msg_buf, 'markdown')
@@ -1004,12 +1045,20 @@ local function render_mssql_msg_buf()
     return mssql_msg_buf, lines, has_md_table
 end
 
-local function compute_mssql_float_config(use_dv, lines, has_md_table)
+local function compute_mssql_float_config(has_dv, active_tab, lines, has_md_table)
     local width, height, title
-    if use_dv then
+    if has_dv then
         width = math.min(math.max(60, math.floor(vim.o.columns * 0.9)), math.max(20, vim.o.columns - 4))
         height = math.min(math.max(15, math.floor(vim.o.lines * 0.82)), math.max(6, vim.o.lines - 4))
-        title = ' MSSQL Query Results (dataframe-textual) '
+        if active_tab == 'messages' then
+            if mssql_has_error then
+                title = ' MSSQL Error & Messages (<M-m>/m results | q/<Esc> close) '
+            else
+                title = ' MSSQL Messages (<M-m>/m results | q/<Esc> close) '
+            end
+        else
+            title = ' MSSQL Query Results (dataframe-textual) '
+        end
     else
         if mssql_has_error then
             title = ' MSSQL Error (q / <Esc> to close) '
@@ -1052,24 +1101,44 @@ local function compute_mssql_float_config(use_dv, lines, has_md_table)
     }
 end
 
-local function update_mssql_winbar(use_dv)
+local function update_mssql_winbar(has_dv, active_tab)
     if not (mssql_results_win and vim.api.nvim_win_is_valid(mssql_results_win)) then
         return
     end
-    if use_dv then
-        local err_prefix = mssql_has_error and '%#DiagnosticError# [SQL Error in batch — :messages] %*' or ''
+    if has_dv then
         local count = #mssql_csv_items
-        if count > 1 then
-            vim.wo[mssql_results_win].winbar = err_prefix .. string.format(
-                '%%#Comment# MSSQL (%s) — %d tables  (b/B tabs | Enter row | Ctrl+T save | <Leader>mv float/split | gq/Ctrl+Q quit)%%*',
-                mssql_results_layout,
-                count
-            )
+        local tbl_label = count == 1 and '1 table' or string.format('%d tables', count)
+        local msg_count = count_mssql_user_messages()
+        local msg_suffix = msg_count > 0 and string.format(' (%d)', msg_count) or ''
+
+        if active_tab == 'messages' then
+            local res_tab = string.format('%%#Comment# 1: Results (%s) %%*', tbl_label)
+            local msg_tab = mssql_has_error
+                and '%#DiagnosticError# [2: Messages (ERROR!)] %*'
+                or string.format('%%#Title# [2: Messages%s] %%*', msg_suffix)
+            vim.wo[mssql_results_win].winbar = res_tab
+                .. msg_tab
+                .. string.format('%%#Comment# │ <M-m>/m/<Tab> results │ <Leader>mv %s │ q/<Esc> close%%*', mssql_results_layout)
         else
-            vim.wo[mssql_results_win].winbar = err_prefix .. string.format(
-                '%%#Comment# MSSQL (%s)  (Enter row | Ctrl+T save | <Leader>mv float/split | q quit)%%*',
-                mssql_results_layout
-            )
+            local res_tab = string.format('%%#Title# [1: Results (%s)] %%*', tbl_label)
+            local msg_tab = mssql_has_error
+                and '%#DiagnosticError# 2: Messages (ERROR!) %*'
+                or string.format('%%#Comment# 2: Messages%s %%*', msg_suffix)
+            if count > 1 then
+                vim.wo[mssql_results_win].winbar = res_tab
+                    .. msg_tab
+                    .. string.format(
+                        '%%#Comment# │ <M-m> messages │ b/B tables │ Enter row │ Ctrl+T save │ <Leader>mv %s │ gq/Ctrl+Q quit%%*',
+                        mssql_results_layout
+                    )
+            else
+                vim.wo[mssql_results_win].winbar = res_tab
+                    .. msg_tab
+                    .. string.format(
+                        '%%#Comment# │ <M-m> messages │ Enter row │ Ctrl+T save │ <Leader>mv %s │ q quit%%*',
+                        mssql_results_layout
+                    )
+            end
         end
     else
         vim.wo[mssql_results_win].winbar = string.format(
@@ -1079,15 +1148,25 @@ local function update_mssql_winbar(use_dv)
     end
 end
 
-local function open_mssql_results(focus_results)
+open_mssql_results = function(focus_results, requested_tab)
     local dv_bin = find_dv_bin()
-    local use_dv = dv_bin ~= nil and #mssql_csv_items > 0
+    local has_dv = dv_bin ~= nil and #mssql_csv_items > 0
     local has_non_dv = mssql_has_completed_run or #mssql_table_fallbacks > 0 or #mssql_messages > 0
 
-    if not use_dv and not has_non_dv then
+    if not has_dv and not has_non_dv then
         vim.notify('No MSSQL query results available', vim.log.levels.INFO)
         return
     end
+
+    if requested_tab == 'messages' then
+        mssql_active_tab = 'messages'
+    elseif requested_tab == 'results' then
+        mssql_active_tab = has_dv and 'results' or 'messages'
+    elseif not has_dv then
+        mssql_active_tab = 'messages'
+    end
+
+    local show_dv = has_dv and (mssql_active_tab == 'results')
 
     local cur_win = vim.api.nvim_get_current_win()
     if cur_win ~= mssql_results_win then
@@ -1098,7 +1177,7 @@ local function open_mssql_results(focus_results)
     local need_spawn = false
     local msg_lines, has_md_table = nil, false
 
-    if use_dv then
+    if show_dv then
         if mssql_dv_buf and vim.api.nvim_buf_is_valid(mssql_dv_buf) then
             target_buf = mssql_dv_buf
         else
@@ -1108,6 +1187,8 @@ local function open_mssql_results(focus_results)
             if mssql_csv_items[1] and mssql_csv_items[1].info then
                 vim.b[target_buf].query_result_info = mssql_csv_items[1].info
             end
+            vim.keymap.set({ 't', 'n' }, '<M-m>', switch_to_mssql_messages_tab, { buffer = target_buf, nowait = true, desc = 'Switch to MSSQL Messages tab' })
+            vim.keymap.set({ 't', 'n' }, '<F2>', switch_to_mssql_messages_tab, { buffer = target_buf, nowait = true, desc = 'Switch to MSSQL Messages tab' })
             mssql_dv_buf = target_buf
             need_spawn = true
         end
@@ -1127,11 +1208,16 @@ local function open_mssql_results(focus_results)
         target_buf, msg_lines, has_md_table = render_mssql_msg_buf()
     end
 
-    local float_cfg = (mssql_results_layout == 'float') and compute_mssql_float_config(use_dv, msg_lines, has_md_table) or nil
+    local float_cfg = (mssql_results_layout == 'float')
+        and compute_mssql_float_config(has_dv, mssql_active_tab, msg_lines, has_md_table)
+        or nil
 
     if mssql_results_win and vim.api.nvim_win_is_valid(mssql_results_win) then
         local win_is_float = vim.api.nvim_win_get_config(mssql_results_win).relative ~= ''
         if (mssql_results_layout == 'float') == win_is_float then
+            if not show_dv and vim.api.nvim_get_current_win() == mssql_results_win then
+                vim.cmd.stopinsert()
+            end
             vim.api.nvim_win_set_buf(mssql_results_win, target_buf)
             if float_cfg then
                 vim.api.nvim_win_set_config(mssql_results_win, float_cfg)
@@ -1153,14 +1239,23 @@ local function open_mssql_results(focus_results)
         end
     end
 
-    if not use_dv and vim.api.nvim_win_is_valid(mssql_results_win) then
-        vim.wo[mssql_results_win].wrap = not has_md_table
-        vim.wo[mssql_results_win].linebreak = not has_md_table
-        vim.wo[mssql_results_win].number = false
-        vim.wo[mssql_results_win].relativenumber = false
-        vim.wo[mssql_results_win].signcolumn = 'no'
-        vim.wo[mssql_results_win].cursorline = false
-        pcall(vim.api.nvim_win_set_cursor, mssql_results_win, { 1, 0 })
+    if vim.api.nvim_win_is_valid(mssql_results_win) then
+        if show_dv then
+            vim.wo[mssql_results_win].wrap = false
+            vim.wo[mssql_results_win].linebreak = false
+            vim.wo[mssql_results_win].number = false
+            vim.wo[mssql_results_win].relativenumber = false
+            vim.wo[mssql_results_win].signcolumn = 'no'
+            vim.wo[mssql_results_win].cursorline = false
+        else
+            vim.wo[mssql_results_win].wrap = not has_md_table
+            vim.wo[mssql_results_win].linebreak = not has_md_table
+            vim.wo[mssql_results_win].number = false
+            vim.wo[mssql_results_win].relativenumber = false
+            vim.wo[mssql_results_win].signcolumn = 'no'
+            vim.wo[mssql_results_win].cursorline = false
+            pcall(vim.api.nvim_win_set_cursor, mssql_results_win, { 1, 0 })
+        end
     end
 
     if #mssql_old_runs > 0 then
@@ -1169,16 +1264,47 @@ local function open_mssql_results(focus_results)
     end
 
     if need_spawn then
-        local cmd = { dv_bin }
+        -- Pass `-L --` so Polars infers column types across all rows instead of
+        -- crashing when string values appear after 100 numeric rows.
+        local cmd = { dv_bin, '-L', '--' }
         for _, item in ipairs(mssql_csv_items) do
             cmd[#cmd + 1] = item.csv_path
         end
         local term_buf = target_buf
+        local spawn_run_id = mssql_run_id
         vim.api.nvim_buf_call(term_buf, function()
             vim.fn.jobstart(cmd, {
                 term = true,
-                on_exit = function()
+                on_exit = function(_, exit_code)
                     vim.schedule(function()
+                        local is_current_dv = (spawn_run_id == mssql_run_id and mssql_dv_buf == term_buf)
+                        if exit_code ~= 0 and is_current_dv and not mssql_cancelled then
+                            mssql_dv_buf = nil
+                            for _, item in ipairs(mssql_csv_items) do
+                                mssql_table_fallbacks[#mssql_table_fallbacks + 1] = {
+                                    lines = item.lines or {},
+                                    row_count = item.row_count,
+                                    order = item.order,
+                                    info = item.info,
+                                }
+                            end
+                            mssql_csv_items = {}
+                            mssql_messages[#mssql_messages + 1] = {
+                                lines = {
+                                    string.format(
+                                        'dataframe-textual (dv) exited with code %s; showing Markdown fallback.',
+                                        tostring(exit_code)
+                                    ),
+                                },
+                                is_error = true,
+                            }
+                            if vim.api.nvim_buf_is_valid(term_buf) then
+                                pcall(vim.api.nvim_buf_delete, term_buf, { force = true })
+                            end
+                            open_mssql_results(true, 'messages')
+                            return
+                        end
+
                         if
                             mssql_results_win
                             and vim.api.nvim_win_is_valid(mssql_results_win)
@@ -1202,12 +1328,12 @@ local function open_mssql_results(focus_results)
         end)
     end
 
-    update_mssql_winbar(use_dv)
+    update_mssql_winbar(has_dv, mssql_active_tab)
 
     if mssql_results_layout == 'float' or focus_results then
         if vim.api.nvim_win_is_valid(mssql_results_win) then
             vim.api.nvim_set_current_win(mssql_results_win)
-            if use_dv and vim.bo[target_buf].buftype == 'terminal' then
+            if show_dv and vim.bo[target_buf].buftype == 'terminal' then
                 vim.cmd.startinsert()
             else
                 vim.cmd.stopinsert()
@@ -1240,6 +1366,7 @@ local function begin_mssql_run()
     mssql_error_notified = false
     mssql_last_elapsed = nil
     mssql_has_completed_run = false
+    mssql_active_tab = 'results'
     mssql_expected_results = nil
     mssql_received_results = 0
     mssql_pending_exports = 0
@@ -1276,7 +1403,8 @@ local function maybe_finish_mssql_run(run_id)
             mssql_old_runs[#mssql_old_runs + 1] = { buf = mssql_dv_buf }
             mssql_dv_buf = nil
         end
-        open_mssql_results(false)
+        local initial_tab = has_mssql_dv_results() and 'results' or 'messages'
+        open_mssql_results(false, initial_tab)
     end))
 end
 
@@ -1297,64 +1425,45 @@ local function handle_mssql_message(message, is_error)
         mssql_has_error = true
     end
 
-    if
-        mssql_has_completed_run
-        and mssql_msg_buf
-        and vim.api.nvim_buf_is_valid(mssql_msg_buf)
-        and mssql_results_win
-        and vim.api.nvim_win_is_valid(mssql_results_win)
-        and vim.api.nvim_win_get_buf(mssql_results_win) == mssql_msg_buf
-    then
-        local _, lines, has_md_table = render_mssql_msg_buf()
-        if vim.api.nvim_win_get_config(mssql_results_win).relative ~= '' then
-            vim.api.nvim_win_set_config(mssql_results_win, compute_mssql_float_config(false, lines, has_md_table))
+    if mssql_has_completed_run and mssql_results_win and vim.api.nvim_win_is_valid(mssql_results_win) then
+        local has_dv = has_mssql_dv_results()
+        update_mssql_winbar(has_dv, mssql_active_tab)
+        if
+            mssql_msg_buf
+            and vim.api.nvim_buf_is_valid(mssql_msg_buf)
+            and vim.api.nvim_win_get_buf(mssql_results_win) == mssql_msg_buf
+        then
+            local _, lines, has_md_table = render_mssql_msg_buf()
+            if vim.api.nvim_win_get_config(mssql_results_win).relative ~= '' then
+                vim.api.nvim_win_set_config(
+                    mssql_results_win,
+                    compute_mssql_float_config(has_dv, mssql_active_tab, lines, has_md_table)
+                )
+            end
         end
     end
 end
 
-local function handle_mssql_query_complete(_, result)
-    if mssql_ignoring_internal or mssql_cancelled then
-        return
+local function build_header_md_lines(column_info)
+    if type(column_info) ~= 'table' or #column_info == 0 then
+        return {}
     end
-    local run_id = mssql_run_id
-    local expected = 0
-    if type(result) == 'table' and type(result.batchSummaries) == 'table' then
-        for _, bs in ipairs(result.batchSummaries) do
-            if type(bs.executionElapsed) == 'string' and bs.executionElapsed ~= '' then
-                mssql_last_elapsed = bs.executionElapsed
-            end
-            if bs.hasError then
-                mssql_has_error = true
-            elseif type(bs.resultSetSummaries) == 'table' then
-                expected = expected + #bs.resultSetSummaries
-            end
-        end
+    local headers = {}
+    local dividers = {}
+    for _, col in ipairs(column_info) do
+        local name = (type(col) == 'table' and type(col.columnName) == 'string' and col.columnName ~= '') and col.columnName or 'col'
+        local w = math.max(3, vim.fn.strdisplaywidth(name))
+        headers[#headers + 1] = name .. string.rep(' ', w - vim.fn.strdisplaywidth(name))
+        dividers[#dividers + 1] = string.rep('-', w)
     end
-    mssql_expected_results = expected
-    vim.schedule(function()
-        maybe_finish_mssql_run(run_id)
-    end)
+    return {
+        '| ' .. table.concat(headers, ' | ') .. ' |',
+        '| ' .. table.concat(dividers, ' | ') .. ' |',
+    }
 end
 
-local function handle_mssql_result_buf(md_buf)
-    if mssql_ignoring_internal then
-        return
-    end
-    if mssql_run_id == 0 then
-        begin_mssql_run()
-        mssql_expected_results = 1
-    end
-
-    local run_id = mssql_run_id
-    mssql_received_results = mssql_received_results + 1
-
-    local info = vim.b[md_buf].query_result_info
-    local sp = info and info.subset_params or nil
-    local order = sp and (sp.batchIndex * 1000 + sp.resultSetIndex) or mssql_received_results
-    local row_count = sp and sp.rowsCount or nil
-    local md_lines = vim.api.nvim_buf_is_valid(md_buf) and vim.api.nvim_buf_get_lines(md_buf, 0, -1, false) or {}
-
-    if not sp or not find_dv_bin() then
+local function export_mssql_csv_or_fallback(run_id, sp, order, row_count, info, md_lines)
+    if not sp or (row_count ~= nil and row_count <= 0) or not find_dv_bin() then
         mssql_table_fallbacks[#mssql_table_fallbacks + 1] = {
             lines = md_lines,
             row_count = row_count,
@@ -1396,6 +1505,8 @@ local function handle_mssql_result_buf(md_buf)
                 csv_path = csv_path,
                 order = order,
                 info = info,
+                lines = md_lines,
+                row_count = row_count,
             }
         else
             pcall(vim.fn.delete, csv_path)
@@ -1408,6 +1519,76 @@ local function handle_mssql_result_buf(md_buf)
         end
         maybe_finish_mssql_run(run_id)
     end))
+end
+
+local function handle_mssql_query_complete(_, result)
+    if mssql_ignoring_internal or mssql_cancelled then
+        return
+    end
+    local run_id = mssql_run_id
+    local expected = 0
+    local errored_sets = {}
+    if type(result) == 'table' and type(result.batchSummaries) == 'table' then
+        for batch_idx, bs in ipairs(result.batchSummaries) do
+            if type(bs.executionElapsed) == 'string' and bs.executionElapsed ~= '' then
+                mssql_last_elapsed = bs.executionElapsed
+            end
+            if bs.hasError then
+                mssql_has_error = true
+                -- mssql.nvim skips open_results_in when batchSummary.hasError is true;
+                -- export any completed SELECT result sets from earlier in the batch/proc directly.
+                if type(bs.resultSetSummaries) == 'table' and type(result.ownerUri) == 'string' then
+                    for rs_idx, rs in ipairs(bs.resultSetSummaries) do
+                        local rc = (type(rs) == 'table' and type(rs.rowCount) == 'number') and rs.rowCount or 0
+                        local sp = {
+                            ownerUri = result.ownerUri,
+                            batchIndex = batch_idx - 1,
+                            resultSetIndex = rs_idx - 1,
+                            rowsStartIndex = 0,
+                            rowsCount = rc,
+                        }
+                        errored_sets[#errored_sets + 1] = {
+                            sp = sp,
+                            order = sp.batchIndex * 1000 + sp.resultSetIndex,
+                            row_count = rc,
+                            info = { subset_params = sp },
+                            md_lines = build_header_md_lines(type(rs) == 'table' and rs.columnInfo or nil),
+                        }
+                    end
+                end
+            elseif type(bs.resultSetSummaries) == 'table' then
+                expected = expected + #bs.resultSetSummaries
+            end
+        end
+    end
+    mssql_expected_results = expected
+    for _, item in ipairs(errored_sets) do
+        export_mssql_csv_or_fallback(run_id, item.sp, item.order, item.row_count, item.info, item.md_lines)
+    end
+    vim.schedule(function()
+        maybe_finish_mssql_run(run_id)
+    end)
+end
+
+local function handle_mssql_result_buf(md_buf)
+    if mssql_ignoring_internal then
+        return
+    end
+    if mssql_run_id == 0 then
+        begin_mssql_run()
+        mssql_expected_results = 1
+    end
+
+    local run_id = mssql_run_id
+    mssql_received_results = mssql_received_results + 1
+
+    local info = vim.b[md_buf].query_result_info
+    local sp = info and info.subset_params or nil
+    local order = sp and (sp.batchIndex * 1000 + sp.resultSetIndex) or mssql_received_results
+    local row_count = sp and sp.rowsCount or nil
+    local md_lines = vim.api.nvim_buf_is_valid(md_buf) and vim.api.nvim_buf_get_lines(md_buf, 0, -1, false) or {}
+
+    export_mssql_csv_or_fallback(run_id, sp, order, row_count, info, md_lines)
 end
 
 vim.api.nvim_create_autocmd('LspAttach', {
@@ -1479,12 +1660,25 @@ local function save_mssql_csv_cmd(dest_arg)
     end
 end
 
+local function toggle_or_open_mssql_messages()
+    if
+        mssql_results_win
+        and vim.api.nvim_win_is_valid(mssql_results_win)
+        and mssql_active_tab == 'messages'
+        and has_mssql_dv_results()
+    then
+        open_mssql_results(true, 'results')
+    else
+        open_mssql_results(true, 'messages')
+    end
+end
+
 local function toggle_mssql_results_layout()
     mssql_results_layout = (mssql_results_layout == 'split') and 'float' or 'split'
     if mssql_results_win and vim.api.nvim_win_is_valid(mssql_results_win) then
         pcall(vim.api.nvim_win_close, mssql_results_win, true)
         mssql_results_win = nil
-        open_mssql_results(mssql_results_layout == 'float')
+        open_mssql_results(mssql_results_layout == 'float', mssql_active_tab)
     else
         vim.notify('MSSQL results layout set to: ' .. mssql_results_layout, vim.log.levels.INFO)
     end
@@ -1544,8 +1738,11 @@ vim.api.nvim_create_user_command('MssqlStart', activate_mssql, { desc = 'Activat
 vim.api.nvim_create_user_command('MssqlStop', deactivate_mssql, { desc = 'Deactivate mssql.nvim LSP for .sql buffers' })
 vim.api.nvim_create_user_command('MssqlResultsLayout', toggle_mssql_results_layout, { desc = 'Toggle MSSQL results between float and split' })
 vim.api.nvim_create_user_command('MssqlResults', function()
-    open_mssql_results(true)
+    open_mssql_results(true, 'results')
 end, { desc = 'Reopen last MSSQL query results or messages' })
+vim.api.nvim_create_user_command('MssqlMessages', toggle_or_open_mssql_messages, {
+    desc = 'Open or toggle MSSQL query messages/errors tab',
+})
 vim.api.nvim_create_user_command('MssqlSaveCsv', function(cmd)
     save_mssql_csv_cmd(cmd.args)
 end, { nargs = '?', complete = 'file', desc = 'Save exported MSSQL result table as CSV' })
@@ -1559,8 +1756,9 @@ vim.keymap.set('n', '<Leader>mm', function()
 end, { desc = 'Toggle mssql.nvim activation' })
 vim.keymap.set('n', '<Leader>mv', toggle_mssql_results_layout, { desc = 'Toggle MSSQL results layout (float/split)' })
 vim.keymap.set('n', '<Leader>mo', function()
-    open_mssql_results(true)
+    open_mssql_results(true, 'results')
 end, { desc = 'Reopen last MSSQL query results' })
+vim.keymap.set('n', '<Leader>mg', toggle_or_open_mssql_messages, { desc = 'Open/toggle MSSQL query messages tab' })
 
 vim.api.nvim_create_autocmd('FileType', {
     desc = 'Auto-activate mssql.nvim in projects containing a .mssql marker file',
