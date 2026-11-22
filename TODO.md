@@ -1,0 +1,1 @@
+- [ ] mssql show persistent connection status when active
