@@ -97,6 +97,8 @@ On Arch Linux with `yay`, you can install everything at once using the included 
 | `<Leader>tk` | Normal | Open terminal split above |
 | `<Leader>tl` | Normal | Open vertical terminal split right |
 | `<Leader>th` | Normal | Open vertical terminal split left |
+| `<Leader>qf` | Normal | Open quickfix list |
+| `<Leader>qq` | Normal | Quit quickfix list |
 
 ### File Browser (`oil.nvim`)
 `netrw` is completely disabled; opening a directory (`nvim .` or `:e path/to/dir`) opens Oil automatically, and hidden/dot files are shown by default.

@@ -167,6 +167,8 @@ vim.keymap.set('n', '<Leader>u', ':resize +4<CR>', { desc = 'Increase window hei
 vim.keymap.set('n', '<Leader>p', ':resize -4<CR>', { desc = 'Decrease window height' })
 vim.keymap.set('n', '<Leader>i', ':vertical resize +4<CR>', { desc = 'Increase window width' })
 vim.keymap.set('n', '<Leader>o', ':vertical resize -4<CR>', { desc = 'Decrease window width' })
+vim.keymap.set('n', '<Leader>qf', ':copen<CR>', { desc = 'Open quickfix list' })
+vim.keymap.set('n', '<Leader>qq', ':cclose<CR>', { desc = 'Quit quickfix list' })
 
 
 -- PLUGINS (built-in vim.pack)
